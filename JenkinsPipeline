@@ -1,0 +1,35 @@
+#ON jenkins job console created direct script
+pipeline {
+    agent any
+
+    stages {
+        stage('Build') {
+            steps {
+                git 'https://github.com/tushar8871/spring_docker.git'
+                bat "mvn clean package"
+            }
+        }
+        stage('Stop and remove container') {
+            steps {
+                bat "docker stop springboot_docker-${currentBuild.previousBuild.getNumber()}"
+                bat "docker rm springboot_docker-${currentBuild.previousBuild.getNumber()}"
+            }
+        }
+        stage('Remove Image') {
+            steps {
+                bat "docker rmi -f spring_docker:${currentBuild.previousBuild.getNumber()}"
+            }
+        }
+        stage('Building Image') {
+            steps {
+                bat "docker build . -t spring_docker:${currentBuild.number}"
+            }
+        }
+        stage('Building container') {
+            steps {
+                bat "docker run --name springboot_docker-${currentBuild.number} -d -p 8000:8000 spring_docker:${currentBuild.number}"
+                bat "docker ps"
+            }
+        }
+    }
+}
